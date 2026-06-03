@@ -10,19 +10,19 @@ import subprocess, sys, time, os
 #         os.mkfifo(p)
 
 # MAIN PROCESSES
-# processes = [
-#     ["python3", "sensors/sensors.py"],
-#     ["python3", "algorithm/algorithm.py"],
-#     # ["python3", "embedded/embedded.py"],
-#     ["./communication/main"],
-#     ["./embedded/main"]
-# ]
+processes = [
+    ["python3", "sensors/sensors.py"],
+    ["python3", "algorithm/algorithm.py"],
+    # ["python3", "embedded/embedded.py"],
+    ["./communication/main"],
+    ["./embedded/main"]
+]
 
 # DEBUG PROCESSES
-processes = [
-    ["python3", "debug_sender/debug_sender.py"],
-    ["./communication/main"],
-]
+# processes = [
+#     ["python3", "debug_sender/debug_sender.py"],
+#     ["./communication/main"],
+# ]
 
 
 procs = [subprocess.Popen(p) for p in processes]
