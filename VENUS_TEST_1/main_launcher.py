@@ -15,6 +15,7 @@ processes = [
     ["python3", "algorithm/algorithm.py"],
     # ["python3", "embedded/embedded.py"],
     ["./communication/main"],
+    ["./motors/main"],
     ["./embedded/main"]
 ]
 
