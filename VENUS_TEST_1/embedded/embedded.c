@@ -13,30 +13,29 @@
 int main() {
     void *ctx = zmq_ctx_new();
 
-    // --- 4 sockets, set up ONCE before the loop ---
+    // --- 4 sockets ---
 
-    // Receives from sensors
+    // Receive from sensors
     void *sub_sen = zmq_socket(ctx, ZMQ_SUB);
     zmq_connect(sub_sen, PIPE_IN_SEN);
     zmq_setsockopt(sub_sen, ZMQ_SUBSCRIBE, "", 0);
 
-    // Sends processed data to algorithm
+    // Send to algorithm
     void *pub_alg = zmq_socket(ctx, ZMQ_PUB);
     zmq_connect(pub_alg, PIPE_OUT_ALG);
 
-    // Receives commands back from algorithm
+    // Receive from algorithm
     void *sub_alg = zmq_socket(ctx, ZMQ_SUB);
     zmq_connect(sub_alg, PIPE_IN_ALG);
     zmq_setsockopt(sub_alg, ZMQ_SUBSCRIBE, "", 0);
 
-    // Sends to communications module
+    // Sends to communication
     void *pub_com = zmq_socket(ctx, ZMQ_PUB);
     zmq_connect(pub_com, PIPE_OUT_COM);
 
     // Small delay so sockets are ready before loop starts
-    usleep(200000);
+    sleep_msec(200);
 
-    // --- variables declared here so they're accessible throughout the loop ---
     char buf[1024];
     int  distance    = -1;
     int  temperature = -1;
@@ -47,7 +46,7 @@ int main() {
 
     while (1) {
 
-        // ── 1. RECEIVE FROM SENSORS ──────────────────────────────────────
+        // --- 1. RECEIVE FROM SENSORS ---
         int n = zmq_recv(sub_sen, buf, sizeof(buf) - 1, ZMQ_DONTWAIT);
         if (n >= 0) {
             buf[n] = '\0';
@@ -67,11 +66,10 @@ int main() {
             }
         }
 
-        // ── 2. SEND TO ALGORITHM ─────────────────────────────────────────
+        // --- 2. SEND TO ALGORITHM ---
         if (distance >= 0 && temperature >= 0) {
             cJSON *to_alg = cJSON_CreateObject();
             cJSON_AddNumberToObject(to_alg, "distance",     distance);
-            cJSON_AddNumberToObject(to_alg, "temperature",  temperature);
             cJSON_AddBoolToObject  (to_alg, "ground_black", (strcmp(color_ground, "black") == 0));
 
             char *to_alg_str = cJSON_PrintUnformatted(to_alg);
@@ -82,7 +80,7 @@ int main() {
             cJSON_Delete(to_alg);
         }
 
-        // ── 3. RECEIVE FROM ALGORITHM ────────────────────────────────────
+        // --- 3. RECEIVE FROM ALGORITHM ---
         int m = zmq_recv(sub_alg, buf, sizeof(buf) - 1, ZMQ_DONTWAIT);
         if (m >= 0) {
             buf[m] = '\0';
@@ -90,19 +88,24 @@ int main() {
             if (!cmd) {
                 printf("[EMB] Bad JSON from algorithm\n");
             } else {
-                int motor_left  = cJSON_GetObjectItem(cmd, "motor_left")->valueint;
-                int motor_right = cJSON_GetObjectItem(cmd, "motor_right")->valueint;
+                // TESTING
+                // speed (positive/negative/0), directional vector
+                // int motor_left  = cJSON_GetObjectItem(cmd, "motor_left")->valueint;
+                // int motor_right = cJSON_GetObjectItem(cmd, "motor_right")->valueint;
 
                 printf("[EMB] From algorithm — motor_left=%d  motor_right=%d\n",
                        motor_left, motor_right);
                 fflush(stdout);
 
-                // Drive motors here using libpynq...
+                // Drive motors here
+                // TODO
 
                 cJSON_Delete(cmd);
 
-                // ── 4. RELAY TO COMMUNICATIONS ───────────────────────────
+                // --- 4. RELAY TO COMMUNICATIONS ---
+                // positions, block locations, temperature, block colors
                 cJSON *to_com = cJSON_CreateObject();
+                // TESTING
                 cJSON_AddNumberToObject(to_com, "motor_left",   motor_left);
                 cJSON_AddNumberToObject(to_com, "motor_right",  motor_right);
                 cJSON_AddNumberToObject(to_com, "distance",     distance);
@@ -117,7 +120,7 @@ int main() {
             }
         }
 
-        usleep(100000); // 100ms
+        sleep_msec(10);
     }
 
     // Cleanup
