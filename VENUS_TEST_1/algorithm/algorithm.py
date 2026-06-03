@@ -1,3 +1,4 @@
+# TEST MODULE
 import zmq, json, time
 
 ctx = zmq.Context()
